@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { mapStepToTaskType, todayIso } from "@/lib/cadence";
 import type { CampaignPriority, CampaignStatus } from "@/types/campaigns";
 import type { CadenceActionType } from "@/types/cadences";
 
@@ -98,15 +99,52 @@ export async function linkExistingLead(campaignId: string, leadId: string) {
     throw new Error("Este lead já participa ativamente desta campanha.");
   }
 
-  const { error } = await supabase.from("lead_campaigns").insert({
-    campaign_id: campaignId,
-    lead_id: leadId,
-    assigned_user_id: userId,
-    status: "novo",
-  });
+  const { data: leadCampaign, error } = await supabase
+    .from("lead_campaigns")
+    .insert({
+      campaign_id: campaignId,
+      lead_id: leadId,
+      assigned_user_id: userId,
+      status: "novo",
+    })
+    .select("id")
+    .single();
 
   if (error) throw error;
+
+  const { data: campaign } = await supabase
+    .from("campaigns")
+    .select("cadence_id")
+    .eq("id", campaignId)
+    .single();
+
+  if (campaign?.cadence_id) {
+    const { data: firstStep } = await supabase
+      .from("cadence_steps")
+      .select("id, step_order, action_type, is_closing_step")
+      .eq("cadence_id", campaign.cadence_id)
+      .eq("step_order", 1)
+      .maybeSingle();
+
+    if (firstStep) {
+      await supabase.from("tasks").insert({
+        lead_id: leadId,
+        lead_campaign_id: leadCampaign.id,
+        cadence_step_id: firstStep.id,
+        assigned_user_id: userId,
+        task_type: mapStepToTaskType(firstStep),
+        scheduled_date: todayIso(),
+      });
+
+      await supabase
+        .from("lead_campaigns")
+        .update({ current_cadence_step_id: firstStep.id, status: "em_abordagem" })
+        .eq("id", leadCampaign.id);
+    }
+  }
+
   revalidatePath(`/campanhas/${campaignId}`);
+  revalidatePath("/operacao");
 }
 
 export async function removeLeadFromCampaign(campaignId: string, leadCampaignId: string) {
