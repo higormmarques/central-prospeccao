@@ -21,6 +21,7 @@ export async function getLeads(params: { q?: string; status?: LeadGeneralStatus;
     .select(
       `id, name, trade_name, legal_name, person_type, document_number, source,
        general_status, priority, assigned_user_id, city, state, notes,
+       bitrix_deal_id, bitrix_url,
        created_at, updated_at,
        assigned_user:users!leads_assigned_user_id_fkey(name),
        lead_contacts(is_primary, contact:contacts(name, whatsapp_number, phone_normalized))`,

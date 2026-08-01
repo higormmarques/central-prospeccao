@@ -30,11 +30,14 @@ export async function validateImportRows(rawRows: string[][], mapping: ColumnMap
 
   const { data: existingLeads } = await supabase
     .from("leads")
-    .select("name, trade_name, document_number")
+    .select("name, trade_name, document_number, bitrix_deal_id")
     .neq("general_status", "arquivado");
 
   const { data: existingContacts } = await supabase.from("contacts").select("phone_normalized");
 
+  const bitrixSet = new Set(
+    (existingLeads ?? []).filter((l) => l.bitrix_deal_id != null).map((l) => String(l.bitrix_deal_id)),
+  );
   const documentSet = new Set(
     (existingLeads ?? []).filter((l) => l.document_number).map((l) => l.document_number!.trim().toLowerCase()),
   );
@@ -56,22 +59,26 @@ export async function validateImportRows(rawRows: string[][], mapping: ColumnMap
       status = "erro";
       reason = "Nome do lead ausente.";
     } else {
+      // Ordem de deduplicacao recomendada pelo doc03 §12: ID do negocio no
+      // Bitrix, outro identificador (documento), telefone, nome+empresa.
+      const bitrixKey = values.bitrix_deal_id?.trim();
       const docKey = values.document_number?.trim().toLowerCase();
-      const namePairKey = `${values.name.trim().toLowerCase()}|${(values.trade_name ?? "").trim().toLowerCase()}`;
       const phoneKey = values.contact_phone ? normalizePhone(values.contact_phone) : null;
+      const namePairKey = `${values.name.trim().toLowerCase()}|${(values.trade_name ?? "").trim().toLowerCase()}`;
 
       const isDuplicateInDb =
+        (bitrixKey && bitrixSet.has(bitrixKey)) ||
         (docKey && documentSet.has(docKey)) ||
-        namePairSet.has(namePairKey) ||
-        (phoneKey && phoneSet.has(phoneKey));
+        (phoneKey && phoneSet.has(phoneKey)) ||
+        namePairSet.has(namePairKey);
 
-      const dedupeKey = docKey || namePairKey || phoneKey || "";
+      const dedupeKey = bitrixKey || docKey || phoneKey || namePairKey;
       const isDuplicateInFile = seenInFile.has(dedupeKey);
       seenInFile.add(dedupeKey);
 
       if (isDuplicateInDb) {
         status = "duplicado";
-        reason = "Já existe um lead com o mesmo documento, telefone ou nome+empresa.";
+        reason = "Já existe um lead com o mesmo ID do Bitrix, documento, telefone ou nome+empresa.";
       } else if (isDuplicateInFile) {
         status = "duplicado";
         reason = "Duplicado dentro do próprio arquivo.";
@@ -125,15 +132,20 @@ export async function confirmImport(params: {
     let leadId: string | null = null;
 
     if (row.status === "novo") {
+      const bitrixDealId = row.values.bitrix_deal_id ? Number(row.values.bitrix_deal_id) : null;
+
       const { data: lead, error: leadError } = await supabase
         .from("leads")
         .insert({
           name: row.values.name,
           trade_name: row.values.trade_name ?? null,
+          legal_name: row.values.legal_name ?? null,
           city: row.values.city ?? null,
           state: row.values.state ?? null,
           source: row.values.source ?? source,
           document_number: row.values.document_number ?? null,
+          bitrix_deal_id: Number.isFinite(bitrixDealId) ? bitrixDealId : null,
+          bitrix_url: row.values.bitrix_url ?? null,
           assigned_user_id: userId,
           created_by: userId,
           updated_by: userId,
@@ -150,6 +162,7 @@ export async function confirmImport(params: {
           .from("contacts")
           .insert({
             name: row.values.contact_name ?? row.values.name!,
+            job_title: row.values.contact_role ?? null,
             phone: row.values.contact_phone ?? null,
             phone_normalized: phoneNormalized,
             whatsapp_number: phoneNormalized,

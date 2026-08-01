@@ -16,6 +16,8 @@ export type Lead = {
   city: string | null;
   state: string | null;
   notes: string | null;
+  bitrix_deal_id: number | null;
+  bitrix_url: string | null;
   created_at: string;
   updated_at: string;
 };

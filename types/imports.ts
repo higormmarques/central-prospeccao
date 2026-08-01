@@ -1,23 +1,31 @@
 export type LeadField =
   | "name"
   | "trade_name"
+  | "legal_name"
   | "city"
   | "state"
   | "source"
   | "document_number"
+  | "bitrix_deal_id"
+  | "bitrix_url"
   | "contact_name"
+  | "contact_role"
   | "contact_phone"
   | "contact_email"
   | "ignore";
 
 export const LEAD_FIELD_LABELS: Record<LeadField, string> = {
-  name: "Nome do lead",
-  trade_name: "Empresa",
+  name: "Nome do lead (TITLE)",
+  trade_name: "Empresa / nome fantasia",
+  legal_name: "Razão social",
   city: "Cidade",
   state: "UF",
   source: "Origem",
-  document_number: "Documento (CNPJ/CPF/ID)",
+  document_number: "Documento (CNPJ/CPF)",
+  bitrix_deal_id: "ID do negócio no Bitrix (ID)",
+  bitrix_url: "Link do negócio no Bitrix",
   contact_name: "Nome do contato",
+  contact_role: "Cargo do contato",
   contact_phone: "Telefone do contato",
   contact_email: "E-mail do contato",
   ignore: "Não importar",

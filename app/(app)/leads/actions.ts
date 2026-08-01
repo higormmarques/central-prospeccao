@@ -96,17 +96,23 @@ export async function updateLead(leadId: string, formData: FormData) {
   const name = str(formData, "name");
   if (!name) throw new Error("Nome do lead é obrigatório.");
 
+  const bitrixDealIdRaw = str(formData, "bitrix_deal_id");
+  const bitrixDealId = bitrixDealIdRaw ? Number(bitrixDealIdRaw) : null;
+
   const { error } = await supabase
     .from("leads")
     .update({
       name,
       trade_name: str(formData, "trade_name"),
+      legal_name: str(formData, "legal_name"),
       person_type: (str(formData, "person_type") as PersonType | null) ?? null,
       city: str(formData, "city"),
       state: str(formData, "state"),
       source: str(formData, "source"),
       priority: (str(formData, "priority") as Priority | null) ?? "media",
       notes: str(formData, "notes"),
+      bitrix_deal_id: Number.isFinite(bitrixDealId) ? bitrixDealId : null,
+      bitrix_url: str(formData, "bitrix_url"),
       updated_by: userId,
     })
     .eq("id", leadId);

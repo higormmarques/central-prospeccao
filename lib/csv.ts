@@ -45,13 +45,17 @@ export function parseCsv(text: string): { headers: string[]; rows: string[][] } 
 }
 
 const FIELD_KEYWORDS: Record<string, string[]> = {
-  name: ["nome do lead", "nome do cliente", "nome"],
-  trade_name: ["empresa", "clinica", "clínica", "consultorio", "consultório", "razao social", "razão social"],
-  document_number: ["cnpj", "cpf", "documento", "id do negocio", "id do negócio", "id"],
+  name: ["nome do lead", "nome do cliente", "nome do negocio", "title", "nome"],
+  trade_name: ["nome fantasia", "empresa", "clinica", "clínica", "consultorio", "consultório"],
+  legal_name: ["razao social", "razão social", "nome juridico", "nome jurídico"],
+  document_number: ["cnpj", "cpf", "documento"],
+  bitrix_deal_id: ["id do negocio", "id do negócio", "deal id", "id"],
+  bitrix_url: ["link do negocio", "link do negócio", "url do negocio", "link bitrix"],
   city: ["cidade"],
   state: ["uf", "estado"],
   source: ["origem"],
   contact_name: ["contato", "responsavel", "responsável"],
+  contact_role: ["cargo", "funcao", "função"],
   contact_phone: ["telefone", "celular", "whatsapp", "fone"],
   contact_email: ["email", "e-mail"],
 };

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { MessageCircle, Pencil, Plus, Star } from "lucide-react";
+import { ExternalLink, MessageCircle, Pencil, Plus, Star } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -165,6 +165,23 @@ export function LeadDrawer() {
                         <Label htmlFor="edit_state">UF</Label>
                         <Input id="edit_state" name="state" defaultValue={lead.state ?? ""} maxLength={2} />
                       </div>
+                      <div className="col-span-2 flex flex-col gap-1.5">
+                        <Label htmlFor="edit_legal_name">Razão social</Label>
+                        <Input id="edit_legal_name" name="legal_name" defaultValue={lead.legal_name ?? ""} />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <Label htmlFor="edit_bitrix_deal_id">ID do negócio (Bitrix)</Label>
+                        <Input
+                          id="edit_bitrix_deal_id"
+                          name="bitrix_deal_id"
+                          type="number"
+                          defaultValue={lead.bitrix_deal_id ?? ""}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <Label htmlFor="edit_bitrix_url">Link do Bitrix</Label>
+                        <Input id="edit_bitrix_url" name="bitrix_url" type="url" defaultValue={lead.bitrix_url ?? ""} />
+                      </div>
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <Label htmlFor="edit_notes">Observações</Label>
@@ -193,6 +210,26 @@ export function LeadDrawer() {
                       <dt className="text-muted-foreground">Responsável</dt>
                       <dd>{lead.assigned_user?.name ?? "—"}</dd>
                     </div>
+                    {(lead.bitrix_url || lead.bitrix_deal_id) && (
+                      <div>
+                        <dt className="text-muted-foreground">Bitrix</dt>
+                        <dd>
+                          {lead.bitrix_url ? (
+                            <a
+                              href={lead.bitrix_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-primary hover:underline"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              Ver negócio #{lead.bitrix_deal_id}
+                            </a>
+                          ) : (
+                            `#${lead.bitrix_deal_id}`
+                          )}
+                        </dd>
+                      </div>
+                    )}
                     <div className="col-span-2">
                       <dt className="text-muted-foreground">Observações</dt>
                       <dd className="whitespace-pre-wrap">{lead.notes ?? "—"}</dd>
