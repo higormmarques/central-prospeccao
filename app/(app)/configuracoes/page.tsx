@@ -1,16 +1,56 @@
-import { Settings } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 import { EmptyState } from "@/components/feedback/empty-state";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UsersTable } from "@/components/settings/users-table";
+import { ReasonsManager } from "@/components/settings/reasons-manager";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentUserRole, getReasons, getRoles, getUsers } from "./queries";
 
-export default function ConfiguracoesPage() {
+export default async function ConfiguracoesPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const currentRole = await getCurrentUserRole();
+
+  if (currentRole !== "administrador") {
+    return (
+      <div className="flex flex-col gap-6">
+        <Breadcrumbs current="Configurações" />
+        <EmptyState
+          icon={ShieldAlert}
+          title="Acesso restrito"
+          description="Configurações e Administração é visível apenas para administradores."
+        />
+      </div>
+    );
+  }
+
+  const [users, roles, reasons] = await Promise.all([getUsers(), getRoles(), getReasons()]);
+
   return (
     <div className="flex flex-col gap-6">
       <Breadcrumbs current="Configurações" />
-      <EmptyState
-        icon={Settings}
-        title="Configurações ainda não implementadas"
-        description="Gestão de usuários, perfis e integrações prevista para as próximas etapas."
-      />
+
+      <div>
+        <h1 className="text-xl font-semibold">Configurações</h1>
+        <p className="text-sm text-muted-foreground">Usuários, perfis e motivos padronizados da Central.</p>
+      </div>
+
+      <Tabs defaultValue="usuarios">
+        <TabsList>
+          <TabsTrigger value="usuarios">Usuários</TabsTrigger>
+          <TabsTrigger value="motivos">Motivos</TabsTrigger>
+        </TabsList>
+        <TabsContent value="usuarios" className="pt-4">
+          <UsersTable users={users} roles={roles} currentUserId={user!.id} />
+        </TabsContent>
+        <TabsContent value="motivos" className="pt-4">
+          <ReasonsManager reasons={reasons} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
