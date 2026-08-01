@@ -9,7 +9,7 @@ import {
 import { CampaignHeader } from "@/components/campaigns/campaign-header";
 import { CampaignLeadsTab } from "@/components/campaigns/campaign-leads-tab";
 import { CadenceEditor } from "@/components/campaigns/cadence-editor";
-import { getCampaignDetail } from "../queries";
+import { getCadenceTemplateOptions, getCampaignDetail } from "../queries";
 
 function one<T>(value: T | T[] | null | undefined): T | null {
   if (Array.isArray(value)) return value[0] ?? null;
@@ -30,6 +30,8 @@ export default async function CampaignDetailPage({
     notFound();
   }
   if (!campaign) notFound();
+
+  const cadenceTemplates = await getCadenceTemplateOptions();
 
   const owner = one(campaign.owner);
   const cadence = one(campaign.cadence);
@@ -75,6 +77,7 @@ export default async function CampaignDetailPage({
                 ? { id: cadence.id, name: cadence.name, steps: cadence.cadence_steps ?? [] }
                 : null
             }
+            templates={cadenceTemplates}
           />
         </TabsContent>
       </Tabs>

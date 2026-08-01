@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { ManagedUser, Reason, Role } from "@/types/settings";
+import type { Cadence, CadenceStep } from "@/types/cadences";
 
 function one<T>(value: T | T[] | null | undefined): T | null {
   if (Array.isArray(value)) return value[0] ?? null;
@@ -51,6 +52,30 @@ export async function getUsers(): Promise<ManagedUser[]> {
     role_name: one(row.role)?.name ?? null,
     last_access_at: row.last_access_at,
     created_at: row.created_at,
+  }));
+}
+
+export type CadenceTemplate = Cadence & { steps: CadenceStep[] };
+
+export async function getCadenceTemplates(): Promise<CadenceTemplate[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("cadences")
+    .select(
+      "id, name, description, channel, status, is_template, cadence_steps(id, cadence_id, name, step_order, action_type, interval_days, content_id, is_required, is_closing_step, next_step_id)",
+    )
+    .eq("is_template", true)
+    .order("name");
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    channel: row.channel,
+    status: row.status,
+    is_template: row.is_template,
+    steps: (row.cadence_steps ?? []).sort((a, b) => a.step_order - b.step_order),
   }));
 }
 

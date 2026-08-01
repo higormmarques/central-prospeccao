@@ -9,12 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/feedback/empty-state";
+import { UseTemplateDialog } from "@/components/campaigns/use-template-dialog";
 import {
   addCadenceStep,
   createCadenceForCampaign,
   deleteCadenceStep,
 } from "@/app/(app)/campanhas/actions";
 import type { CadenceStep } from "@/types/cadences";
+import type { CadenceTemplateOption } from "@/app/(app)/campanhas/queries";
 
 const ACTION_LABEL: Record<string, string> = {
   whatsapp: "WhatsApp",
@@ -29,10 +31,12 @@ export function CadenceEditor({
   campaignId,
   campaignName,
   cadence,
+  templates,
 }: {
   campaignId: string;
   campaignName: string;
   cadence: { id: string; name: string; steps: CadenceStep[] } | null;
+  templates: CadenceTemplateOption[];
 }) {
   const [isPending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
@@ -82,11 +86,14 @@ export function CadenceEditor({
     return (
       <EmptyState
         title="Nenhuma cadência vinculada"
-        description="Crie uma cadência para definir abordagem, follow-ups e encerramento desta campanha."
+        description="Crie uma cadência do zero ou aplique um modelo reutilizável para definir abordagem, follow-ups e encerramento desta campanha."
         action={
-          <Button size="sm" disabled={isPending} onClick={handleCreateCadence}>
-            Criar cadência
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" disabled={isPending} onClick={handleCreateCadence}>
+              Criar cadência
+            </Button>
+            <UseTemplateDialog campaignId={campaignId} templates={templates} />
+          </div>
         }
       />
     );

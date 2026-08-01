@@ -76,3 +76,31 @@ export async function getCampaignDetail(campaignId: string) {
   if (error) throw error;
   return campaign;
 }
+
+export type CadenceTemplateOption = {
+  id: string;
+  name: string;
+  description: string | null;
+  channel: string | null;
+  step_count: number;
+};
+
+export async function getCadenceTemplateOptions(): Promise<CadenceTemplateOption[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("cadences")
+    .select("id, name, description, channel, cadence_steps(count)")
+    .eq("is_template", true)
+    .eq("status", "active")
+    .order("name");
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    channel: row.channel,
+    step_count: (row.cadence_steps?.[0] as { count: number } | undefined)?.count ?? 0,
+  }));
+}

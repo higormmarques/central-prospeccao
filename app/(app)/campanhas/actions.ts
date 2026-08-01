@@ -151,6 +151,60 @@ export async function createCadenceForCampaign(campaignId: string, name: string)
   revalidatePath(`/campanhas/${campaignId}`);
 }
 
+export async function useTemplateForCampaign(campaignId: string, templateId: string) {
+  const { supabase, userId } = await requireUser();
+
+  const { data: template, error: templateError } = await supabase
+    .from("cadences")
+    .select(
+      "name, description, channel, cadence_steps(name, step_order, action_type, interval_days, is_required, is_closing_step)",
+    )
+    .eq("id", templateId)
+    .eq("is_template", true)
+    .single();
+
+  if (templateError) throw templateError;
+
+  const { data: cadence, error: cadenceError } = await supabase
+    .from("cadences")
+    .insert({
+      name: template.name,
+      description: template.description,
+      channel: template.channel,
+      is_template: false,
+      created_by: userId,
+      updated_by: userId,
+    })
+    .select("id")
+    .single();
+
+  if (cadenceError) throw cadenceError;
+
+  const steps = template.cadence_steps ?? [];
+  if (steps.length > 0) {
+    const { error: stepsError } = await supabase.from("cadence_steps").insert(
+      steps.map((step) => ({
+        cadence_id: cadence.id,
+        name: step.name,
+        step_order: step.step_order,
+        action_type: step.action_type,
+        interval_days: step.interval_days,
+        is_required: step.is_required,
+        is_closing_step: step.is_closing_step,
+      })),
+    );
+    if (stepsError) throw stepsError;
+  }
+
+  const { error: linkError } = await supabase
+    .from("campaigns")
+    .update({ cadence_id: cadence.id, updated_by: userId })
+    .eq("id", campaignId);
+
+  if (linkError) throw linkError;
+  revalidatePath(`/campanhas/${campaignId}`);
+}
+
 export async function addCadenceStep(cadenceId: string, campaignId: string, formData: FormData) {
   const { supabase } = await requireUser();
 

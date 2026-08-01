@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { ReasonType } from "@/types/settings";
+import type { CadenceActionType } from "@/types/cadences";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -85,6 +86,68 @@ export async function toggleReasonActive(reasonId: string, isActive: boolean) {
     .from("reasons")
     .update({ is_active: isActive, updated_by: userId })
     .eq("id", reasonId);
+  if (error) throw error;
+  revalidatePath("/configuracoes");
+}
+
+export async function createCadenceTemplate(formData: FormData) {
+  const { supabase, userId } = await requireUser();
+
+  const name = str(formData, "name");
+  if (!name) throw new Error("Nome do modelo é obrigatório.");
+
+  const { error } = await supabase.from("cadences").insert({
+    name,
+    description: str(formData, "description"),
+    channel: str(formData, "channel"),
+    is_template: true,
+    created_by: userId,
+    updated_by: userId,
+  });
+
+  if (error) throw error;
+  revalidatePath("/configuracoes");
+}
+
+export async function toggleCadenceTemplateStatus(cadenceId: string, status: "active" | "inactive") {
+  const { supabase, userId } = await requireUser();
+  const { error } = await supabase.from("cadences").update({ status, updated_by: userId }).eq("id", cadenceId);
+  if (error) throw error;
+  revalidatePath("/configuracoes");
+}
+
+export async function addTemplateCadenceStep(cadenceId: string, formData: FormData) {
+  const { supabase } = await requireUser();
+
+  const name = str(formData, "name");
+  if (!name) throw new Error("Nome da etapa é obrigatório.");
+
+  const { data: last } = await supabase
+    .from("cadence_steps")
+    .select("step_order")
+    .eq("cadence_id", cadenceId)
+    .order("step_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const nextOrder = (last?.step_order ?? 0) + 1;
+
+  const { error } = await supabase.from("cadence_steps").insert({
+    cadence_id: cadenceId,
+    name,
+    step_order: nextOrder,
+    action_type: (str(formData, "action_type") as CadenceActionType | null) ?? "whatsapp",
+    interval_days: Number(str(formData, "interval_days") ?? "0") || 0,
+    is_closing_step: formData.get("is_closing_step") === "on",
+  });
+
+  if (error) throw error;
+  revalidatePath("/configuracoes");
+}
+
+export async function deleteTemplateCadenceStep(stepId: string) {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("cadence_steps").delete().eq("id", stepId);
   if (error) throw error;
   revalidatePath("/configuracoes");
 }

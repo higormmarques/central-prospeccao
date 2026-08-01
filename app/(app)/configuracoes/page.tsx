@@ -4,8 +4,9 @@ import { EmptyState } from "@/components/feedback/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UsersTable } from "@/components/settings/users-table";
 import { ReasonsManager } from "@/components/settings/reasons-manager";
+import { CadenceTemplatesManager } from "@/components/settings/cadence-templates-manager";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUserRole, getReasons, getRoles, getUsers } from "./queries";
+import { getCadenceTemplates, getCurrentUserRole, getReasons, getRoles, getUsers } from "./queries";
 
 export default async function ConfiguracoesPage() {
   const supabase = await createClient();
@@ -28,7 +29,12 @@ export default async function ConfiguracoesPage() {
     );
   }
 
-  const [users, roles, reasons] = await Promise.all([getUsers(), getRoles(), getReasons()]);
+  const [users, roles, reasons, cadenceTemplates] = await Promise.all([
+    getUsers(),
+    getRoles(),
+    getReasons(),
+    getCadenceTemplates(),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -43,12 +49,16 @@ export default async function ConfiguracoesPage() {
         <TabsList>
           <TabsTrigger value="usuarios">Usuários</TabsTrigger>
           <TabsTrigger value="motivos">Motivos</TabsTrigger>
+          <TabsTrigger value="cadencias">Cadências</TabsTrigger>
         </TabsList>
         <TabsContent value="usuarios" className="pt-4">
           <UsersTable users={users} roles={roles} currentUserId={user!.id} />
         </TabsContent>
         <TabsContent value="motivos" className="pt-4">
           <ReasonsManager reasons={reasons} />
+        </TabsContent>
+        <TabsContent value="cadencias" className="pt-4">
+          <CadenceTemplatesManager templates={cadenceTemplates} />
         </TabsContent>
       </Tabs>
     </div>
