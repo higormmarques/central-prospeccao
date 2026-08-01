@@ -7,7 +7,8 @@ import { LeadRowActions } from "@/components/leads/lead-row-actions";
 import { LeadsFilters } from "@/components/leads/leads-filters";
 import { LeadDrawer } from "@/components/leads/lead-drawer";
 import { NewLeadDialog } from "@/components/leads/new-lead-dialog";
-import { Users } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { Upload, Users } from "lucide-react";
 import { getLeadCounts, getLeads } from "./queries";
 import type { LeadGeneralStatus } from "@/types/leads";
 
@@ -36,7 +37,13 @@ export default async function LeadsPage({
             Consulte, organize e gerencie os leads cadastrados na Central.
           </p>
         </div>
-        <NewLeadDialog />
+        <div className="flex gap-2">
+          <Link href="/leads/importar" className={buttonVariants({ variant: "outline" })}>
+            <Upload className="h-4 w-4" />
+            Importar lista
+          </Link>
+          <NewLeadDialog />
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
