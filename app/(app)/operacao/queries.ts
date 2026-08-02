@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { todayIso } from "@/lib/cadence";
+import { isTestModeActive } from "@/lib/test-mode";
 import type { TaskQueueItem } from "@/types/operations";
 
 type RawContactLink = { is_primary: boolean; contact: { name: string; whatsapp_number: string | null; phone_normalized: string | null } };
@@ -36,13 +37,14 @@ export async function getQueue() {
     .from("tasks")
     .select(
       `id, task_type, priority, scheduled_date, scheduled_time, lead_id, lead_campaign_id, cadence_step_id,
-       lead:leads(id, name, trade_name, city, state,
+       lead:leads!inner(id, name, trade_name, city, state, is_test,
          lead_contacts(is_primary, contact:contacts(name, whatsapp_number, phone_normalized))),
        lead_campaign:lead_campaigns(id, status, campaign:campaigns(id, name)),
        cadence_step:cadence_steps(id, name, action_type, cadence_id, step_order)`,
     )
     .eq("assigned_user_id", user.id)
     .eq("status", "pendente")
+    .eq("lead.is_test", await isTestModeActive())
     .order("scheduled_date", { ascending: true });
 
   if (error) throw error;
@@ -72,9 +74,10 @@ export async function getQueue() {
 
   const { count: totalConcluidasHoje } = await supabase
     .from("tasks")
-    .select("id", { count: "exact", head: true })
+    .select("id, lead:leads!inner(is_test)", { count: "exact", head: true })
     .eq("assigned_user_id", user.id)
     .eq("status", "concluida")
+    .eq("lead.is_test", await isTestModeActive())
     .gte("completed_at", `${today}T00:00:00`)
     .lte("completed_at", `${today}T23:59:59`);
 

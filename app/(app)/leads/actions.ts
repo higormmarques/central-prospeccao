@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePhone } from "@/lib/phone";
+import { isTestModeActive } from "@/lib/test-mode";
 import type { Lead, LeadGeneralStatus, Priority, PersonType } from "@/types/leads";
 
 export type LeadDetail = Lead & {
@@ -69,6 +70,7 @@ export async function createLead(formData: FormData) {
       priority: (str(formData, "priority") as Priority | null) ?? "media",
       notes: str(formData, "notes"),
       assigned_user_id: userId,
+      is_test: await isTestModeActive(),
       created_by: userId,
       updated_by: userId,
     })
@@ -149,6 +151,7 @@ async function createContactForLead(
       whatsapp_number: phoneNormalized,
       email: input.email,
       preferred_channel: phoneNormalized ? "whatsapp" : input.email ? "email" : null,
+      is_test: await isTestModeActive(),
       created_by: userId,
       updated_by: userId,
     })
@@ -222,6 +225,7 @@ export async function getLeadDetail(leadId: string): Promise<LeadDetail> {
          user:users(name))`,
     )
     .eq("id", leadId)
+    .eq("is_test", await isTestModeActive())
     .order("occurred_at", { referencedTable: "interactions", ascending: false })
     .single();
 

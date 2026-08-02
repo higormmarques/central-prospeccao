@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/navigation/sidebar";
 import { Header } from "@/components/navigation/header";
+import { TestModeBanner } from "@/components/navigation/test-mode-banner";
 import { createClient } from "@/lib/supabase/server";
+import { isTestModeActive } from "@/lib/test-mode";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -23,10 +25,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect("/acesso-restrito");
   }
 
+  const testModeActive = await isTestModeActive();
+
   return (
     <div className="min-h-screen">
       <Sidebar />
       <div className="pl-16">
+        {testModeActive && <TestModeBanner />}
         <Header name={profile.name} email={profile.email} photoUrl={profile.photo_url} />
         <main className="p-6">{children}</main>
       </div>

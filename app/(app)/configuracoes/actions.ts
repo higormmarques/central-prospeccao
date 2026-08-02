@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { isTestModeActive, setTestModeCookie } from "@/lib/test-mode";
 import type { ReasonType } from "@/types/settings";
 import type { CadenceActionType } from "@/types/cadences";
 
@@ -90,6 +91,12 @@ export async function toggleReasonActive(reasonId: string, isActive: boolean) {
   revalidatePath("/configuracoes");
 }
 
+export async function setTestMode(active: boolean) {
+  await requireUser();
+  await setTestModeCookie(active);
+  revalidatePath("/", "layout");
+}
+
 export async function createCadenceTemplate(formData: FormData) {
   const { supabase, userId } = await requireUser();
 
@@ -101,6 +108,7 @@ export async function createCadenceTemplate(formData: FormData) {
     description: str(formData, "description"),
     channel: str(formData, "channel"),
     is_template: true,
+    is_test: await isTestModeActive(),
     created_by: userId,
     updated_by: userId,
   });

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isTestModeActive } from "@/lib/test-mode";
 import type { ManagedUser, Reason, Role } from "@/types/settings";
 import type { Cadence, CadenceStep } from "@/types/cadences";
 
@@ -65,6 +66,7 @@ export async function getCadenceTemplates(): Promise<CadenceTemplate[]> {
       "id, name, description, channel, status, is_template, cadence_steps(id, cadence_id, name, step_order, action_type, interval_days, content_id, is_required, is_closing_step, next_step_id)",
     )
     .eq("is_template", true)
+    .eq("is_test", await isTestModeActive())
     .order("name");
   if (error) throw error;
 

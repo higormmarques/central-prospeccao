@@ -5,7 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UsersTable } from "@/components/settings/users-table";
 import { ReasonsManager } from "@/components/settings/reasons-manager";
 import { CadenceTemplatesManager } from "@/components/settings/cadence-templates-manager";
+import { TestModeToggle } from "@/components/settings/test-mode-toggle";
 import { createClient } from "@/lib/supabase/server";
+import { isTestModeActive } from "@/lib/test-mode";
 import { getCadenceTemplates, getCurrentUserRole, getReasons, getRoles, getUsers } from "./queries";
 
 export default async function ConfiguracoesPage() {
@@ -29,11 +31,12 @@ export default async function ConfiguracoesPage() {
     );
   }
 
-  const [users, roles, reasons, cadenceTemplates] = await Promise.all([
+  const [users, roles, reasons, cadenceTemplates, testModeActive] = await Promise.all([
     getUsers(),
     getRoles(),
     getReasons(),
     getCadenceTemplates(),
+    isTestModeActive(),
   ]);
 
   return (
@@ -44,6 +47,8 @@ export default async function ConfiguracoesPage() {
         <h1 className="text-xl font-semibold">Configurações</h1>
         <p className="text-sm text-muted-foreground">Usuários, perfis e motivos padronizados da Central.</p>
       </div>
+
+      <TestModeToggle active={testModeActive} />
 
       <Tabs defaultValue="usuarios">
         <TabsList>

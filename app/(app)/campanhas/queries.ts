@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isTestModeActive } from "@/lib/test-mode";
 import type { CampaignListItem, CampaignStatus } from "@/types/campaigns";
 
 function one<T>(value: T | T[] | null | undefined): T | null {
@@ -12,6 +13,7 @@ export async function getCampaigns(params: { status?: CampaignStatus }) {
   let query = supabase
     .from("campaigns")
     .select("*, owner:users!campaigns_owner_user_id_fkey(name)")
+    .eq("is_test", await isTestModeActive())
     .order("created_at", { ascending: false });
 
   if (params.status) {
@@ -71,6 +73,7 @@ export async function getCampaignDetail(campaignId: string) {
          lead:leads(id, name, trade_name, city, state, general_status))`,
     )
     .eq("id", campaignId)
+    .eq("is_test", await isTestModeActive())
     .single();
 
   if (error) throw error;
@@ -92,6 +95,7 @@ export async function getCadenceTemplateOptions(): Promise<CadenceTemplateOption
     .select("id, name, description, channel, cadence_steps(count)")
     .eq("is_template", true)
     .eq("status", "active")
+    .eq("is_test", await isTestModeActive())
     .order("name");
 
   if (error) throw error;

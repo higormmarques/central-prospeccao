@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { ContactDialog } from "@/components/contacts/contact-dialog";
 import { createClient } from "@/lib/supabase/server";
+import { isTestModeActive } from "@/lib/test-mode";
 import { buildWhatsAppLink } from "@/services/whatsapp/link";
 import { Search } from "lucide-react";
 import type { Contact } from "@/types/contacts";
@@ -20,6 +21,7 @@ export default async function ContatosPage({
   let query = supabase
     .from("contacts")
     .select("*")
+    .eq("is_test", await isTestModeActive())
     .order("name", { ascending: true })
     .limit(50);
 

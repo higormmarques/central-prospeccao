@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isTestModeActive } from "@/lib/test-mode";
 import type { ImportHistoryItem } from "@/types/imports";
 
 function one<T>(value: T | T[] | null | undefined): T | null {
@@ -11,6 +12,7 @@ export async function getImportHistory(): Promise<ImportHistoryItem[]> {
   const { data, error } = await supabase
     .from("imports")
     .select("*, user:users(name), campaign:campaigns(name)")
+    .eq("is_test", await isTestModeActive())
     .order("started_at", { ascending: false })
     .limit(20);
   if (error) throw error;
@@ -27,6 +29,7 @@ export async function getCampaignOptions() {
   const { data, error } = await supabase
     .from("campaigns")
     .select("id, name")
+    .eq("is_test", await isTestModeActive())
     .neq("status", "archived")
     .order("name");
   if (error) throw error;

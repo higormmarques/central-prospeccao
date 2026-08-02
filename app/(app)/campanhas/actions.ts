@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { linkLeadToCampaign } from "@/lib/cadence";
+import { isTestModeActive } from "@/lib/test-mode";
 import type { CampaignPriority, CampaignStatus } from "@/types/campaigns";
 import type { CadenceActionType } from "@/types/cadences";
 
@@ -38,6 +39,7 @@ export async function createCampaign(formData: FormData) {
       start_date: str(formData, "start_date"),
       end_date: str(formData, "end_date"),
       owner_user_id: userId,
+      is_test: await isTestModeActive(),
       created_by: userId,
       updated_by: userId,
     })
@@ -123,6 +125,7 @@ export async function searchLeadsForLinking(query: string) {
   const { data, error } = await supabase
     .from("leads")
     .select("id, name, trade_name")
+    .eq("is_test", await isTestModeActive())
     .neq("general_status", "arquivado")
     .or(`name.ilike.%${term}%,trade_name.ilike.%${term}%`)
     .limit(10);
@@ -136,7 +139,7 @@ export async function createCadenceForCampaign(campaignId: string, name: string)
 
   const { data: cadence, error: cadenceError } = await supabase
     .from("cadences")
-    .insert({ name, created_by: userId, updated_by: userId })
+    .insert({ name, is_test: await isTestModeActive(), created_by: userId, updated_by: userId })
     .select("id")
     .single();
 
@@ -153,6 +156,7 @@ export async function createCadenceForCampaign(campaignId: string, name: string)
 
 export async function useTemplateForCampaign(campaignId: string, templateId: string) {
   const { supabase, userId } = await requireUser();
+  const testMode = await isTestModeActive();
 
   const { data: template, error: templateError } = await supabase
     .from("cadences")
@@ -161,6 +165,7 @@ export async function useTemplateForCampaign(campaignId: string, templateId: str
     )
     .eq("id", templateId)
     .eq("is_template", true)
+    .eq("is_test", testMode)
     .single();
 
   if (templateError) throw templateError;
@@ -172,6 +177,7 @@ export async function useTemplateForCampaign(campaignId: string, templateId: str
       description: template.description,
       channel: template.channel,
       is_template: false,
+      is_test: testMode,
       created_by: userId,
       updated_by: userId,
     })

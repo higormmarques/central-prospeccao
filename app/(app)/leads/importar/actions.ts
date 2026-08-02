@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePhone } from "@/lib/phone";
 import { linkLeadToCampaign } from "@/lib/cadence";
+import { isTestModeActive } from "@/lib/test-mode";
 import type { ColumnMapping, LeadField, RowStatus, ValidatedRow } from "@/types/imports";
 
 async function requireUser() {
@@ -27,13 +28,18 @@ function extractValues(row: string[], mapping: ColumnMapping): Partial<Record<Le
 
 export async function validateImportRows(rawRows: string[][], mapping: ColumnMapping): Promise<ValidatedRow[]> {
   const { supabase } = await requireUser();
+  const testMode = await isTestModeActive();
 
   const { data: existingLeads } = await supabase
     .from("leads")
     .select("name, trade_name, document_number, bitrix_deal_id")
+    .eq("is_test", testMode)
     .neq("general_status", "arquivado");
 
-  const { data: existingContacts } = await supabase.from("contacts").select("phone_normalized");
+  const { data: existingContacts } = await supabase
+    .from("contacts")
+    .select("phone_normalized")
+    .eq("is_test", testMode);
 
   const bitrixSet = new Set(
     (existingLeads ?? []).filter((l) => l.bitrix_deal_id != null).map((l) => String(l.bitrix_deal_id)),
@@ -103,6 +109,7 @@ export async function confirmImport(params: {
 }) {
   const { supabase, userId } = await requireUser();
   const { fileName, campaignId, source, rows } = params;
+  const testMode = await isTestModeActive();
 
   const counts = {
     total: rows.length,
@@ -123,6 +130,7 @@ export async function confirmImport(params: {
       duplicate_records: counts.duplicados,
       error_records: counts.erros,
       status: "processing",
+      is_test: testMode,
     })
     .select("id")
     .single();
@@ -147,6 +155,7 @@ export async function confirmImport(params: {
           bitrix_deal_id: Number.isFinite(bitrixDealId) ? bitrixDealId : null,
           bitrix_url: row.values.bitrix_url ?? null,
           assigned_user_id: userId,
+          is_test: testMode,
           created_by: userId,
           updated_by: userId,
         })
@@ -167,6 +176,7 @@ export async function confirmImport(params: {
             phone_normalized: phoneNormalized,
             whatsapp_number: phoneNormalized,
             email: row.values.contact_email ?? null,
+            is_test: testMode,
             created_by: userId,
             updated_by: userId,
           })

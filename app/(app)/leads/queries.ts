@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isTestModeActive } from "@/lib/test-mode";
 import type { LeadGeneralStatus, LeadListItem } from "@/types/leads";
 
 export const PAGE_SIZE = 20;
@@ -27,6 +28,7 @@ export async function getLeads(params: { q?: string; status?: LeadGeneralStatus;
        lead_contacts(is_primary, contact:contacts(name, whatsapp_number, phone_normalized))`,
       { count: "exact" },
     )
+    .eq("is_test", await isTestModeActive())
     .order("created_at", { ascending: false })
     .range(from, to);
 
@@ -63,17 +65,21 @@ export async function getLeads(params: { q?: string; status?: LeadGeneralStatus;
 
 export async function getLeadCounts() {
   const supabase = await createClient();
+  const testMode = await isTestModeActive();
   const { count: total } = await supabase
     .from("leads")
     .select("id", { count: "exact", head: true })
+    .eq("is_test", testMode)
     .neq("general_status", "arquivado");
   const { count: ativos } = await supabase
     .from("leads")
     .select("id", { count: "exact", head: true })
+    .eq("is_test", testMode)
     .eq("general_status", "ativo");
   const { count: encerrados } = await supabase
     .from("leads")
     .select("id", { count: "exact", head: true })
+    .eq("is_test", testMode)
     .eq("general_status", "encerrado");
 
   return { total: total ?? 0, ativos: ativos ?? 0, encerrados: encerrados ?? 0 };

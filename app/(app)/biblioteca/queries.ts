@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isTestModeActive } from "@/lib/test-mode";
 import type { ContentType, ContentWithAuthor } from "@/types/content";
 
 function one<T>(value: T | T[] | null | undefined): T | null {
@@ -12,6 +13,7 @@ export async function getContents(params: { type?: ContentType; q?: string }) {
   let query = supabase
     .from("content")
     .select("*, author:users!content_author_user_id_fkey(name)")
+    .eq("is_test", await isTestModeActive())
     .neq("status", "archived")
     .order("updated_at", { ascending: false });
 

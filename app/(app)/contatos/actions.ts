@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePhone } from "@/lib/phone";
+import { isTestModeActive } from "@/lib/test-mode";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -39,6 +40,7 @@ export async function createContact(formData: FormData) {
     city: str(formData, "city"),
     state: str(formData, "state"),
     notes: str(formData, "notes"),
+    is_test: await isTestModeActive(),
     created_by: userId,
     updated_by: userId,
   });

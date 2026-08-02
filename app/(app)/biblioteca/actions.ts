@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { isTestModeActive } from "@/lib/test-mode";
 import type { ContentChannel, ContentType } from "@/types/content";
 
 async function requireUser() {
@@ -35,6 +36,7 @@ export async function createContent(formData: FormData) {
     external_url: str(formData, "external_url"),
     channel: (str(formData, "channel") as ContentChannel | null) ?? null,
     author_user_id: userId,
+    is_test: await isTestModeActive(),
     created_by: userId,
     updated_by: userId,
   });
